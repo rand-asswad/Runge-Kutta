@@ -14,7 +14,7 @@
 #include <math.h>
 #include <string.h>
 #include <float.h>
-#include "interface_utilisateur.h"
+#include "user_interface.h"
 
 /*** TYPE DEFINITIONS ***/
 typedef double(*eqn_fct)(double,double);	// function type f(t,y(t))
@@ -96,7 +96,7 @@ points RK12(eqn_fct f, point M0, double b, int n, double tol)
 			h *= beta*(tol/eps);
 
 			k++;
-			x[k] = xk;
+			t[k] = tk;
 			y[k] = yk;
 		}
 	}
@@ -153,7 +153,7 @@ points RK24(eqn_fct f, point M0, double b, int n, double tol)
 			h *= beta*sqrt(tol/eps);
 
 			k++;
-			x[k] = xk;
+			t[k] = tk;
 			y[k] = yk;
 		}
 	}
