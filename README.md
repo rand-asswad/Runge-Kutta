@@ -3,7 +3,7 @@ Runge-Kutta C program, methods (RK12 and RK24) for solving ordinary differential
 
 The program solves an ODE of the form y'(t) = f(t,y(t)) for a point M0=(t0,y(t0)) for all t in [a,b]
 
-We propose two examples of ODE, please feel free to add or modify an ODE which you check its right conditions.
+We propose two examples of ODE, please feel free to add or modify an ODE after defining the right conditions.
 
 The Runge-Kutta code can be found easily on the web.
 However, I decided to post my code because I had a hard time finding a RK code with adaptive step size which is very important in practice.
