@@ -21,5 +21,8 @@ How to use my program, create a directory with :
 
 Then run this directory on terminal and enter "make RK", then run the program by the command "./RK" (without the quotation marks of course!). You can simply compile and execute "main.c" but you need "-lm" to compile it for the "math.h" module.
 
+
+Si vous comprenez le français, je peux vous envoyer le rapport en format PDF où j'ai bien expliqué le contrôle du pas (adaptive step-size) mathématiquement. J'ai eu la flemme de traduire le rapport en anglais...
+
 I hope my code meets your needs.
 Enjoy!
