@@ -1,50 +1,53 @@
 /* 
  * =========================================================================
- * 		Projet MMSN : Résolution d'équations differentielles ordinaires
- *				   Méthode de Runge-Kutta : RK12 et RK24 
- * 				 		Fait par : Rand ASSWAD
+ * 		Resolution of Ordinary Differential Equations
+ *		    Runge-Kutta Methods : RK12 et RK24 
+ * 				Rand ASSWAD
+ * ========================================================================
+ *	The program solves an ODE of the form:	y'(t) = f(t,y(t))
  * ========================================================================
  */
 
-/*** les bibliothèques utilisées ***/
+/*** USED LIBRARIES ***/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <float.h>
 #include "interface_utilisateur.h"
 
-/*** définitions des types ***/
-typedef double(*eqn_fct)(double,double);	// type correspondant à la fonction f(x,y(x))
-typedef double(*fonction)(double,point);	// type correspondant à la fonction y(x) pour un point M0=(x0,y(x0))
-typedef double *tab;	// un pointeur tableau (tableau dynamique) de types double
-typedef struct res_struct {tab x; tab y; int dim;} res;		// enregistrement les xk,yk, et le nombre total de points
+/*** TYPE DEFINITIONS ***/
+typedef double(*eqn_fct)(double,double);	// function type f(t,y(t))
+typedef double(*function)(double,point);	// fonction type y(t) passing by the point M0=(t0,y(t0))
+typedef double *tab;	// a pointer array of double (dynamic array)
+typedef struct res_struct {tab t; tab y; int nb_pts;} points;	// structure of points (t_n,y_n) and number of points
 
-/******************************* LES SIGNATURES DES FONCTIONS *******************************/
+/******************************* FUNCTION SIGNATURES *******************************/
 
-/*** les fonctions exemples ***/
+/*** function examples ***/
 double f1 (double t, double y);
 double sol1 (double t, point M0);
 double f2 (double t, double y);
 double sol2 (double t, point M0);
 
-/*** fonctions de Runge-Kutta ***/
-res RK12(eqn_fct f, point M0, double fin_intervale, int nb_points, double tolerance);
-res RK24(eqn_fct f, point M0, double fin_intervale, int nb_points, double tolerance);
-#define MAX_pts 100000		// le nombre de points maximal à prendre pour la résolution de l'EDO
-#define beta 0.8			// coéficient de correction du pas (si erreur>tolérance)
+/*** Runge-Kutta functions ***/
+points RK12(eqn_fct f, point M0, double interval_end, int nb_points, double error_tolerance);
+points RK24(eqn_fct f, point M0, double interval_end, int nb_points, double error_tolerance);
+#define MAX_pts 100000		// The maximal number of points for solving the ODE
+#define beta	0.8		// The step correction factor (if erreur>tolérance)
 
-/*** fonction d'affichage de résultats ***/
-void afficher_solution (res points_courbe, fonction y, point M0);
-#define nb_chiffres	6		// nombre de chiffres à afficher après la virgule
+/*** Result display functions ***/
+void displaySolution (points solution_points, function y, point M0);
+#define nb_digits 6		// Number of digits to display (after the point)
 
-/*** fonctions de traitement de résultats***/
-void extraire_points (char nomFichier[], res points, fonction sol_exacte, point M0);	// extraire les résultats dans un fichier, avec la solution exacte (pour comparer)
-void gnuplot(char nomFichier[]);	// dessiner les points sur gnuplot à partir d'un fichier
+/*** Result manipulation functions ***/
+void extractPoints (char fileName[], points solution_points, function exact_solution, point M0);	// Extract points in a file to compare results with exact solution
+void gnuplot(char fileName[]);	// Plot the points extracted in a file
 
 /*************************************** LES FONCTIONS ***************************************/
 
-// fonctions de traitement de tableaux dynamiques
-tab init_tab (int n) { return malloc(sizeof(double)*n); }
+// Dynamic array functions
+tab init_tab (int n) { return malloc(sizeof(double)*n); }	// initialize array
 tab copy_tab (int n, double old_tab[])
 {
 	tab t = init_tab (n);
@@ -52,37 +55,41 @@ tab copy_tab (int n, double old_tab[])
 	return t;
 }
 
-void afficher_solution (res c, fonction y, point M0)
+void displaySolution (points c, function y, point M0)
 {
-	printf("k \t x_k \t\t y_k \t\t y(x_k) \t erreur\n");
-	for (int k=0; k<c.dim; k++) printf("%d \t %5.*f \t %5.*f \t %5.*f \t %e\n",k,nb_chiffres,c.x[k],nb_chiffres,c.y[k],nb_chiffres,y(c.x[k],M0),fabs(c.y[k]-y(c.x[k],M0)));
+	printf("k \t t_k \t\t y_k \t\t y(t_k) \t error\n");
+	for (int k=0; k<c.dim; k++) printf("%d \t %5.*f \t %5.*f \t %5.*f \t %e\n",k,nb_digits,c.t[k],nb_digits,c.y[k],nb_digits,y(c.t[k],M0),fabs(c.y[k]-y(c.t[k],M0)));
 }
 
-res RK12(eqn_fct f, point M0, double b, int n, double tol)
+points RK12(eqn_fct f, point M0, double b, int n, double tol)
 {
-	double x[MAX_pts], y[MAX_pts], xk,yk,k1,k2,h,eps;
+	double t[MAX_pts], y[MAX_pts], tk,yk,k1,k2,h,eps;
 	int k=0;
 	
-	h = (b-M0.x)/n;	// initialiser h
-	x[0] = M0.x;	// x0 = a
+	h = (b-M0.t)/n;	// initialize h
+	t[0] = M0.t;	// t0 = a
 	y[0] = M0.y;	// y0 = y(x0) = y(a)
 	
-	while (x[k]<=b)
+	while (t[k]<=b)
 	{
-		if (h<2E-50) {
-			h = (b-M0.x)/n;	// réinitialiser h
-			eps *= 10;		// augmenter la tolérance
-			k = 0;			// recommencer
+		if (h<DBL_EPSILON)
+		/* If the error tolerance is too small, it might need an h smaller that the double precision
+		 * in that case, we resolve the problem by increasing the error tolerance by a factor of 10 */
+		{
+			h = (b-M0.t)/n;		// re-initalize h
+			eps *= 10;		// increase the error tolerance
+			k = 0;			// restart algorithme
 		}
 		
-		xk = x[k] + h;
+		tk = t[k] + h;
 		
-		k1 = f(x[k],y[k]);		// ordre 1
-		k2 = f(xk, y[k]+h*k1);	// ordre 2
-		yk = y[k] + h*(k1 + k2)/2.0;	// RK12
+		k1 = f(t[k],y[k]);		// 1st order
+		k2 = f(tk, y[k]+h*k1);		// 2nd order
+		yk = y[k] + h*(k1 + k2)/2.0;	// RK12 formula
 		
-		eps = h*fabs(k2-k1)/2.0;		// erreur(k) = h*|phi_2 - phi_1|
+		eps = h*fabs(k2-k1)/2.0;	// consistance error(k) = h*|phi_2 - phi_1|
 		
+		// Step correction
 		if (eps >= tol) h *= beta*sqrt(tol/eps);
 		else
 		{
@@ -94,48 +101,52 @@ res RK12(eqn_fct f, point M0, double b, int n, double tol)
 		}
 	}
 
-	res courbe;
-	courbe.x = copy_tab(k,x);
-	courbe.y = copy_tab(k,y);
-	courbe.dim = k;
+	points curve;
+	curve.t = copy_tab(k,t);
+	curve.y = copy_tab(k,y);
+	curve.nb_pts = k;
 	
-	return courbe;
+	return curve;
 }
 
-res RK24(eqn_fct f, point M0, double b, int n, double tol)
+points RK24(eqn_fct f, point M0, double b, int n, double tol)
 {
-	double x[MAX_pts], y[MAX_pts], xk,yk,k1,k2,k3,k4,h,mid_h,eps;
+	double t[MAX_pts], y[MAX_pts], tk,yk,k1,k2,k3,k4,h,mid_h,eps;
 	int k=0;
 	
-	h = (b-M0.x)/n;	// initialiser h
-	x[0] = M0.x;	// x0 = a
-	y[0] = M0.y;	// y0 = y(x0) = y(a)
+	h = (b-M0.t)/n;	// initialiser h
+	t[0] = M0.t;	// t0 = a
+	y[0] = M0.y;	// y0 = y(t0) = y(a)
 	
-	while (x[k]<=b)
+	while (t[k]<=b)
 	{
-		if (h<2E-50) {
-			h = (b-M0.x)/n;	// réinitialiser h
-			eps *= 10;		// augmenter la tolérance
-			k = 0;			// recommencer
+		if (h<DBL_EPSILON)
+		/* If the error tolerance is too small, it might need an h smaller that the double precision
+		 * in that case, we resolve the problem by increasing the error tolerance by a factor of 10 */
+		{
+			h = (b-M0.t)/n;		// re-initalize h
+			eps *= 10;		// increase the error tolerance
+			k = 0;			// restart algorithme
 		}
 		
 		mid_h = h/2.0;
-		xk = x[k] + mid_h;
+		tk = t[k] + mid_h;
 		
-		// Ordre 2
-		k1 = f(x[k],y[k]);
-		k2 = f(xk, y[k] + mid_h*k1);
+		// RK2
+		k1 = f(t[k],y[k]);
+		k2 = f(tk, y[k] + mid_h*k1);
 		
-		// Ordre 4
-		k3 = f(xk, y[k] + mid_h*k2);
-		xk += mid_h;
-		k4 = f(xk, y[k] + h*k3);
+		// RK4
+		k3 = f(tk, y[k] + mid_h*k2);
+		tk += mid_h;
+		k4 = f(tk, y[k] + h*k3);
 		
 		// RK24
 		yk = y[k] + h*(k1 + 2*(k2 + k3) + k4)/6.0;
 		
-		eps = h*fabs(k1 - k2 + 2*k3 + k4)/6.0;
+		eps = h*fabs(k1 - k2 + 2*k3 + k4)/6.0;		// consistance error(k) = h*|phi_2 - phi_1|
 		
+		// Step correction
 		if (eps >= tol) h *= beta*pow(tol/eps,0.25);
 		else
 		{
@@ -147,94 +158,94 @@ res RK24(eqn_fct f, point M0, double b, int n, double tol)
 		}
 	}
 
-	res courbe;
-	courbe.x = copy_tab(k,x);
-	courbe.y = copy_tab(k,y);
-	courbe.dim = k;
+	points curve;
+	curve.t = copy_tab(k,t);
+	curve.y = copy_tab(k,y);
+	curve.nb_pts = k;
 	
-	return courbe;
+	return curve;
 }
 
-#define CHAINE_MAX 100
-void extraire_points (char nomFichier[], res points, fonction sol_theorique, point M0)
+#define STR_MAX 100
+void extractPoints (char fileName[], points sol, function exact, point M0)
 {
-	char path[CHAINE_MAX] = "./fichiers/";
-	strcat(path,nomFichier);
+	char path[STR_MAX] = "./files/";
+	strcat(path,fileName);
 	strcat(path,".dat");
 	
-	FILE* fichier = NULL;
+	FILE* f = NULL;
 	
-	fichier = fopen(path, "w");
-	for (int i=0; i<points.dim; i++)
-		fprintf(fichier,"%f %f %f\n", points.x[i], points.y[i], sol_theorique(points.x[i],M0));
+	f = fopen(path, "w");
+	for (int i=0; i<sol.nb_pts; i++)
+		fprintf(f,"%f %f %f\n", sol.t[i], sol.y[i], exact(points.t[i],M0));
 	
-	fclose(fichier);
+	fclose(f);
 }
 
-void gnuplot(char nomFichier[])
+void gnuplot(char fileName[])
 {
-	char path[CHAINE_MAX] = "./fichiers/";
-	strcat(path,nomFichier);
+	char path[STR_MAX] = "./files/";
+	strcat(path,fileName);
 	strcat(path,".dat");
 	
 	FILE * gnuplotPipe = popen("gnuplot -persistent","w");
-	fprintf(gnuplotPipe, "set title \"Méthode de Runge-Kutta\"\n");
-	fprintf(gnuplotPipe, "plot '%s' using 1:2 title \"Runge-Kutta\" with points, '' using 1:3 title \"Solution Exacte\"\n",path);
+	fprintf(gnuplotPipe, "set title \"Runge-Kutta Methods\"\n");
+	fprintf(gnuplotPipe, "plot '%s' using 1:2 title \"Runge-Kutta\" with points, '' using 1:3 title \"Exact Solution\"\n",path);
 }
 
 int main()
 {
-	puts("***** Projet MMSN : Résolution d'équations differentielles ordinaires *****");
-	puts("*****             Méthode de Runge-Kutta : RK12 et RK24               *****");
-	puts("*****        Projet realise par Rand ASSWAD et Cedric FRAGNAUD        *****");
+	puts("***** Resolution of Ordinary Differential Equations *****");
+	puts("*****	 Runge-Kutta Methodes : RK12 & RK24	  *****");
+	puts("*****		     Rand ASSWAD		  *****");
 	puts("");
 	
-	int methode, equation, parametres, nb_pts = 100;
-	fonction sol;
+	int methode, equation, parameters, nb_pts = 100;
+	function sol;
 	eqn_fct f;
 	point M;
 	double tol=0.001, b=20.0;
-	res resultats;
-	char nomFichier[CHAINE_MAX], c[]="0";
+	points results;
+	char fileName[STR_MAX], c[]="0";
 	
-	methode = choisir_methode();
+	methode = chooseMethode();
 		
-	equation = choisir_equation();
+	equation = chooseEquation();
 	if (equation==1) {
 		f = &f1;	sol = &sol1;
-		M.x = 0.0;	M.y = 0.5;
+		M.t = 0.0;	M.y = 0.5;
 	}
 	else {
 		f = &f2;	sol = &sol2;
-		M.x = 0.0;	M.y = 0.0;
+		M.t = 0.0;	M.y = 0.0;
 	}
 	
-	parametres = oui_ou_non("Voulez-vous entrez les paramètres de la méthode ? (sinon on vous propose des valeurs par défaut)");
+	parameters = YES_NO("Would you like to enter the methode parameters ? (if not, we assign parameters by default)");
 	
-	if (parametres==1) {
+	if (parameters==1) {
 		M = input_point(equation);
-		puts("Entrez la borne supérieure de votre intervale (une valeure supérieure à x0)");
-		do scanf("%lf",&b); while (b<=M.x);
-		puts("Entrez l'erreur maximale tolérée"); scanf("%lf",&tol); tol=fabs(tol);
-		puts("Entrez le nombre de points à utiliser au départ"); scanf("%d",&nb_pts); nb_pts=abs(nb_pts);
+		puts("Please enter the end point of the interval (a value greater than t0)");
+		do scanf("%lf",&b); while (b<=M.t);
+		puts("Please enter the maximal tolerated error"); scanf("%lf",&tol); tol=fabs(tol);
+		puts("Please enter the initial number of points you would like to use"); scanf("%d",&nb_pts); nb_pts=abs(nb_pts);
 	}
 	
 	switch (methode) {
 		case 1 :
-			resultats = RK12(f,M,b,nb_pts,tol);
-			strcpy(nomFichier,"RK12-eq");
+			results = RK12(f,M,b,nb_pts,tol);
+			strcpy(fileName,"RK12-eq");
 			break;
 		case 2 :
-			resultats = RK24(f,M,b,nb_pts,tol);
-			strcpy(nomFichier,"RK24-eq");
+			results = RK24(f,M,b,nb_pts,tol);
+			strcpy(fileName,"RK24-eq");
 	}
 	
 	c[0] += equation;
-	strcat(nomFichier,c);
+	strcat(fileName,c);
 	
-	extraire_points (nomFichier,resultats,sol,M);
-	afficher_solution(resultats,sol,M);
-	gnuplot(nomFichier);
+	extractPoints (fileName,results,sol,M);
+	afficher_solution(results,sol,M);
+	gnuplot(fileName);
 	
 	return EXIT_SUCCESS;
 }
@@ -243,19 +254,19 @@ int main()
 
 
 
-// premier exemple
+// first example : y'(t) = y(1-y) ==> y(t) = 1/(1 + c*exp(-t))
 double f1 (double t, double y)
 {
 	return y*(1-y);
 }
 double sol1 (double t, point M0)
-// ATTENTION!!! y0 = M0.y ne peux pas être égale à (0)
+// ATTENTION!!! y0 = M0.y cannot be equal to (0)
 {
-	double c = (1.0/M0.y - 1.0)*exp(M0.x);
+	double c = (1.0/M0.y - 1.0)*exp(M0.t);
 	return 1.0/(1.0+exp(-t)*c);
 }
 
-// deuxième exemple
+// second example : y'(t) = t*exp(-y) ==> y(t) = ln(t²/2 + c)
 double f2 (double t, double y)
 {
 	return t*exp(-y);
