@@ -19,8 +19,7 @@ How to use my program, create a directory with :
 - makefile
 - files (create an empty folder)
 
-Then run this directory on terminal and enter "make RK", then run the program by the command "./RK" (without the quotation marks of course!)
-You can simple compile and execute "main.c" but you need "-lm" to compile it for the "math.h" module.
+Then run this directory on terminal and enter "make RK", then run the program by the command "./RK" (without the quotation marks of course!). You can simply compile and execute "main.c" but you need "-lm" to compile it for the "math.h" module.
 
 I hope my code meets your needs.
 Enjoy!
