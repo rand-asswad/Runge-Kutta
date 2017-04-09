@@ -1,67 +1,67 @@
-/* ========================================================================
- *					   Projet MMSN - Rand ASSWAD
- * ========================================================================
- * 						L'INTERFACE UTILISATEUR
- * ========================================================================
+/* ==================================================================
+ *	ODE solver using Runge-Kutta methods  -  by Rand ASSWAD
+ * ==================================================================
+ * 			    USER INTERFACE
+ * ==================================================================
  */
 
-/*** les bibliothèques utilisées ***/
+/*** USED LIBRARIES ***/
 #include <stdio.h>
 #include <math.h>
 
-typedef struct point_struct { double x; double y; } point;
+typedef struct point_struct { double t; double y; } point;
 
 /******************************* LES SIGNATURES DES FONCTIONS *******************************/
-int choisir_methode ();
-int choisir_equation ();
-int oui_ou_non (char message[]);
+int chooseMethode ();
+int chooseEquation ();
+int YES_NO (char message[]);
 point input_point(int equation);
 
 
 /*************************************** LES FONCTIONS ***************************************/
 
-int choisir_methode ()
+int chooseMethode ()
 {
 	int n;
-	puts("Quelle méthode de Runge-Kutta voudriez-vous utiliser ?");
+	puts("Which Runge-Kutta methode would you like to use?");
 	puts("1) RK12");
 	puts("2) RK24");
 	scanf("%d",&n);
 	while ((n>2)||(n<1))
 	{
-		puts("Votre choix n\'est pas valable, veuillez entrer 1 ou 2");
+		puts("Your choice is not possible, please enter 1 or 2");
 		scanf("%d",&n);
 	}
 	return n;
 }
 
-int choisir_equation ()
+int chooseEquation ()
 {
 	int n;
-	printf("Quelle équation voudriez-vous résoudre ?\n\n");
-	printf("1) Modèle de Verhulst (modèle d\'évolution d\'une population de bactérie) - simplifié\n");
-	printf("\t y'(t) = y(1-y) \t pour y(t) dans ]0;1[\n\n");
-	printf("2) Exemple d\'une EDO du 1er ordre non-linéaire\n");
+	printf("Which ODE would you like to solve?\n\n");
+	printf("1) Verhulst's model (bacteria population evolution model) - simplified\n");
+	printf("\t y'(t) = y(1-y) \t for y(t) in ]0;1[\n\n");
+	printf("2) Example of a non-linear first order ODE\n");
 	printf("\t y'(t) = t*exp(-y)\n\n");
 	scanf("%d",&n);
 	while ((n>2)||(n<1))
 	{
-		puts("Votre choix n\'est pas valable, veuillez entrer 1 ou 2");
+		puts("Your choice is not possible, please enter 1 or 2");
 		scanf("%d",&n);
 	}
 	return n;
 }
 
-int oui_ou_non (char message[])
+int YES_NO (char message[])
 {
 	int n;
 	puts(message);
-	puts("1) OUI");
-	puts("2) NON");
+	puts("1) YES");
+	puts("2) NO");
 	scanf("%d",&n);
 	while ((n>2)||(n<1))
 	{
-		puts("Votre choix n\'est pas valable, veuillez entrer 1 ou 2");
+		puts("Your choice is not possible, please enter 1 or 2");
 		scanf("%d",&n);
 	}
 	return n;
@@ -70,21 +70,21 @@ int oui_ou_non (char message[])
 point input_point(int equation)
 {
 	point M;
-	puts("Entrez un point M0=(x0,y(x0)) pour trouver la solution");
-	printf("x0 = "); scanf("%lf",&M.x);
+	puts("Please enter a point M0=(t0,y(t0)) to find y(t)");
+	printf("t0 = "); scanf("%lf",&M.t);
 	printf("y0 = "); scanf("%lf",&M.y);
 	if (equation==1) {
 		while (!((M.y>0)&&(M.y<1))) {
-		puts("L\'equation est définie pour y(t) dans ]0;1[");
+		puts("The equation is defined for y(t) in ]0;1[");
 		scanf("%lf",&M.y);
 		}
 	}
 	else { if (equation==2) {
-		while ((exp(M.y)<(M.x*M.x/2.0))&&(M.y<1)) {
-			puts("Pour avoir une solution pour tout t réel il faut que ce point vérifie l'inégalité suivante");
-			printf("\t exp(y0) > (t0^2)/2 \t \t (conseil: vérifier si t0 = 0)\n");
-			printf("\t Il faut aussi que y0>1\n");
-			printf("t0 = "); scanf("%lf",&M.x);
+		while ((exp(M.y)<(M.t*M.t/2.0))&&(M.y<1)) {
+			puts("To obtain a solution for all real t the initial point M0 has to verify the following inequality");
+			printf("\t exp(y0) > (t0^2)/2 \t \t (hint: check for t0 = 0)\n");
+			printf("\t also y0>1\n");
+			printf("t0 = "); scanf("%lf",&M.t);
 			printf("y0 = "); scanf("%lf",&M.y);
 		}
 	}}
