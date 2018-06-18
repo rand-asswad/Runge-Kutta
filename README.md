@@ -1,7 +1,11 @@
 # Runge-Kutta
 Runge-Kutta C program, methods (RK12 and RK24) for solving ordinary differential equations, with adaptive step size.
 
-The program solves an ODE of the form $ y'(t) = f(t,y(t)), \forall t\in[a,b] $ for a given point $M_0 = (t_0, y(t_0))$
+The program solves an ODE of the form
+
+$ y'(t) = f(t,y(t)), \forall t\in[a,b] $
+
+for a given point $M_0 = (t_0, y(t_0))$
 
 We propose two examples of ODE, please feel free to add or modify an ODE after defining the right conditions.
 
